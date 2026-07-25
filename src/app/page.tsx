@@ -11,7 +11,7 @@ import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
 
 export default function Home() {
-  // Container ref for the 500vh scrollable sequence area
+  // Container ref for the scrollable sequence area
   const scrollyContainerRef = useRef<HTMLDivElement | null>(null);
 
   return (
@@ -19,8 +19,8 @@ export default function Home() {
       {/* Sticky Navigation Header */}
       <Navbar />
 
-      {/* Component 1 & 2: Scroll-Linked Canvas & Parallax Overlay */}
-      <div ref={scrollyContainerRef} className="relative h-[400vh] w-full bg-[#121212]">
+      {/* Scroll-Linked Canvas & Parallax Overlay */}
+      <div ref={scrollyContainerRef} className="relative h-[300vh] w-full bg-[#121212]">
         <ScrollyCanvas totalFrames={90} containerRef={scrollyContainerRef} />
         <Overlay containerRef={scrollyContainerRef} />
       </div>

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { useScroll, useTransform, motion } from "framer-motion";
-import { Sparkles, Code2, Cpu, ArrowDown, Terminal, MapPin, Download, Send, Eye, GraduationCap } from "lucide-react";
+import { useScroll, useTransform, motion, useMotionValueEvent } from "framer-motion";
+import { Sparkles, Code2, Cpu, MapPin, Download, Send, Eye, GraduationCap, Terminal } from "lucide-react";
 import { AntiGravityCharacter } from "./AntiGravityCharacter";
 import { ResumeModal } from "./ResumeModal";
 
@@ -14,58 +14,87 @@ const STAGES = [
   { id: "intro", label: "Intro", icon: Terminal },
   { id: "about", label: "About", icon: Code2 },
   { id: "academic", label: "Academic", icon: Cpu },
-  { id: "work", label: "Work", icon: ArrowDown },
 ];
 
 export const Overlay: React.FC<OverlayProps> = ({ containerRef }) => {
   const [isResumeOpen, setIsResumeOpen] = useState(false);
+  const [activeStage, setActiveStage] = useState(0);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"],
   });
 
-  // Stage 1: 0% - 25%
-  const opacity1 = useTransform(scrollYProgress, [0, 0.08, 0.2, 0.25], [1, 1, 0.8, 0]);
-  const y1 = useTransform(scrollYProgress, [0, 0.25], [0, -80]);
-  const scale1 = useTransform(scrollYProgress, [0, 0.25], [1, 0.95]);
+  useMotionValueEvent(scrollYProgress, "change", (v) => {
+    const idx = Math.min(STAGES.length - 1, Math.floor(v * STAGES.length));
+    setActiveStage(idx);
+  });
 
-  // Stage 2: 25% - 50%
-  const opacity2 = useTransform(scrollYProgress, [0.25, 0.3, 0.45, 0.5], [0, 1, 1, 0]);
-  const y2 = useTransform(scrollYProgress, [0.25, 0.32, 0.45, 0.5], [60, 0, 0, -60]);
+  // Stage 1: 0% - 33%
+  const opacity1 = useTransform(scrollYProgress, [0, 0.05, 0.28, 0.33], [1, 1, 0.8, 0]);
+  const y1 = useTransform(scrollYProgress, [0, 0.33], [0, -80]);
+  const scale1 = useTransform(scrollYProgress, [0, 0.33], [1, 0.95]);
 
-  // Stage 3: 50% - 75%
-  const opacity3 = useTransform(scrollYProgress, [0.5, 0.55, 0.7, 0.75], [0, 1, 1, 0]);
-  const y3 = useTransform(scrollYProgress, [0.5, 0.57, 0.7, 0.75], [60, 0, 0, -60]);
+  // Stage 2: 33% - 66%
+  const opacity2 = useTransform(scrollYProgress, [0.33, 0.38, 0.6, 0.66], [0, 1, 1, 0]);
+  const y2 = useTransform(scrollYProgress, [0.33, 0.4, 0.6, 0.66], [60, 0, 0, -60]);
 
-  // Stage 4: 75% - 100%
-  const opacity4 = useTransform(scrollYProgress, [0.75, 0.8, 0.95, 1], [0, 1, 1, 0.2]);
-  const y4 = useTransform(scrollYProgress, [0.75, 0.82], [50, 0]);
+  // Stage 3: 66% - 100%
+  const opacity3 = useTransform(scrollYProgress, [0.66, 0.72, 0.95, 1], [0, 1, 1, 0.4]);
+  const y3 = useTransform(scrollYProgress, [0.66, 0.74], [60, 0]);
 
-  // Timeline rail fill (0 -> 1 across the whole sequence)
   const railScaleY = scrollYProgress;
+
+  const scrollToStage = (idx: number) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    const range = el.offsetHeight - window.innerHeight;
+    const target = top + (idx / STAGES.length) * range;
+    window.scrollTo({ top: target, behavior: "smooth" });
+  };
 
   return (
     <>
       <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between">
-        {/* Vertical Stage Timeline Rail */}
-        <div className="pointer-events-none fixed left-6 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center gap-3 sm:flex">
-          <div className="relative flex flex-col items-center gap-3 rounded-full border border-white/10 bg-black/40 px-2 py-4 backdrop-blur-md">
+        {/* Interactive Vertical Stage Timeline Rail */}
+        <div className="pointer-events-auto fixed left-6 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center gap-3 sm:flex">
+          <div className="relative flex flex-col items-center gap-3 rounded-full border border-white/10 bg-black/50 px-2 py-4 backdrop-blur-md">
             {/* Progress fill */}
             <motion.div
               style={{ scaleY: railScaleY }}
-              className="absolute left-1/2 top-2 bottom-2 w-px -translate-x-1/2 origin-top rounded-full bg-gradient-to-b from-blue-400 via-purple-400 to-cyan-400"
+              className="absolute left-1/2 top-2 bottom-2 w-0.5 -translate-x-1/2 origin-top rounded-full bg-gradient-to-b from-blue-400 via-purple-400 to-cyan-400"
             />
             {STAGES.map((stage, idx) => {
               const Icon = stage.icon;
+              const isActive = activeStage === idx;
               return (
-                <div
+                <button
                   key={stage.id}
-                  className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[#121212] text-gray-500"
-                  title={stage.label}
+                  onClick={() => scrollToStage(idx)}
+                  className="group relative flex items-center justify-center"
+                  aria-label={`Go to ${stage.label} stage`}
                 >
-                  <Icon className="h-3.5 w-3.5" />
-                </div>
+                  <div
+                    className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-300 ${
+                      isActive
+                        ? "border-blue-400 bg-blue-600/30 text-blue-200 shadow-[0_0_12px_rgba(59,130,246,0.6)] scale-110"
+                        : "border-white/10 bg-[#121212] text-gray-500 group-hover:text-gray-300 group-hover:border-white/30"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </div>
+                  {/* Active label */}
+                  <span
+                    className={`pointer-events-none absolute left-12 whitespace-nowrap rounded-md border border-white/10 bg-black/70 px-2 py-1 text-[10px] font-mono uppercase tracking-wider backdrop-blur-md transition-all duration-300 ${
+                      isActive
+                        ? "text-blue-200 opacity-100 translate-x-0"
+                        : "text-gray-400 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0"
+                    }`}
+                  >
+                    {stage.label}
+                  </span>
+                </button>
               );
             })}
           </div>
@@ -76,7 +105,6 @@ export const Overlay: React.FC<OverlayProps> = ({ containerRef }) => {
           style={{ opacity: opacity1, y: y1, scale: scale1 }}
           className="sticky top-0 flex h-screen w-full flex-col items-center justify-center px-6 text-center"
         >
-          {/* Soft dark scrim to lift text off the bright canvas */}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50" />
           <div className="pointer-events-auto relative flex flex-col items-center max-w-4xl">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-500/40 bg-blue-950/60 px-4 py-1.5 backdrop-blur-md shadow-lg shadow-blue-950/40">
@@ -207,29 +235,6 @@ export const Overlay: React.FC<OverlayProps> = ({ containerRef }) => {
                   <p className="text-xs text-gray-200 mt-0.5">Robust REST API endpoints, JPA/Hibernate ORM, MySQL database schemas, and modular React UIs.</p>
                 </div>
               </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Stage 4: Transition to Work */}
-        <motion.div
-          style={{ opacity: opacity4, y: y4 }}
-          className="sticky top-0 flex h-screen w-full flex-col items-center justify-center px-6 text-center"
-        >
-          <div className="pointer-events-none absolute inset-0 bg-black/50" />
-          <div className="pointer-events-auto relative flex flex-col items-center max-w-3xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-500/40 bg-purple-950/60 px-4 py-1.5 text-xs font-mono text-purple-200 backdrop-blur-md shadow-lg shadow-purple-950/40">
-              <Terminal className="h-3.5 w-3.5" /> EXPLORE FEATURED PROJECTS
-            </div>
-            <h2 className="text-4xl font-extrabold text-white sm:text-6xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.7)]">
-              Ready to see my <span className="text-gradient">work?</span>
-            </h2>
-            <p className="mt-4 text-gray-100 max-w-md text-sm sm:text-base drop-shadow-[0_1px_6px_rgba(0,0,0,0.7)]">
-              Scroll down to explore full stack web applications, AI resume generation, desktop management tools, and REST API microservices.
-            </p>
-            <div className="mt-8 flex items-center gap-2 text-sm font-mono text-blue-300 animate-bounce drop-shadow">
-              <span>Featured Projects Below</span>
-              <ArrowDown className="h-4 w-4" />
             </div>
           </div>
         </motion.div>
